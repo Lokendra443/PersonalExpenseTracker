@@ -1,0 +1,213 @@
+﻿@page "/addtransaction"
+
+@using PersonalExpenseTracker.Model
+
+
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="row w-100">
+        <div class="col-md-8 offset-md-2">
+            <!-- Card Start -->
+            <div class="card shadow-lg bg-info">
+                <div class="card-body">
+                    <h2 class="text-center mb-4">Add Transaction</h2>
+
+                    <EditForm Model="@transaction" OnValidSubmit="HandleAddTransaction">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="row">
+                            <!-- Title field -->
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" id="title" @bind-value="transaction.Title" class="form-control" placeholder="Enter title" />
+                                <ValidationMessage For="@(() => transaction.Title)" />
+                            </div>
+
+                            <!-- Transaction Type -->
+                            <div class="col-md-6 mb-3">
+                                <label for="transactionType" class="form-label">Transaction Type</label>
+                                <select class="form-select" @bind="transaction.Type" required>
+                                    <option value="">Select transaction type</option>
+                                    <option value="inflow">Inflow</option>
+                                    <option value="outflow">Outflow</option>
+                                    <option value="debt">Debt</option>
+                                </select>
+                                <ValidationMessage For="@(() => transaction.Type)" />
+                            </div>
+
+                            <!-- Amount field -->
+                            <div class="col-md-6 mb-3">
+                                <label for="amount" class="form-label">Amount</label>
+                                <InputNumber class="form-control" @bind-Value="transaction.Amount" />
+                                <ValidationMessage For="@(() => transaction.Amount)" />
+                            </div>
+
+                            <!-- Transaction Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="transactionDate" class="form-label">Date</label>
+                                <InputDate class="form-control" @bind-Value="transaction.Date" />
+                                <ValidationMessage For="@(() => transaction.Date)" />
+                            </div>
+
+                            <!-- Show additional fields only for debt transactions -->
+                            @if (transaction.Type == "debt")
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <label for="sourceOfDebt" class="form-label">Source of Debt</label>
+                                    <input type="text" id="sourceOfDebt" class="form-control" @bind="transaction.SourceOfDebt" required/>
+                                    
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="dueDate" class="form-label">Due Date</label>
+                                    <input type="date" id="dueDate" class="form-control" @bind="transaction.DueDate" required/>
+                                    
+                                </div>
+                            }
+
+                            <!-- Notes (optional) -->
+                            <div class="col-md-12 mb-3">
+                                <label for="notes" class="form-label">Notes (Optional)</label>
+                                <textarea class="form-control" @bind="transaction.Notes" rows="3"></textarea>
+                            </div>
+
+                            <!-- Tags -->
+                            <div class="col-md-12 mb-3">
+                                <label for="tags" class="form-label">Tags</label>
+                                <select class="form-select" multiple @onchange="HandleTagSelection" required>
+                                    @foreach (var tag in tags)
+                                    {
+                                        <option value="@tag.Id" selected="@selectedTagIds.Contains(tag.Id)">
+                                            @tag.Name
+                                        </option>
+                                    }
+                                </select>
+
+                                <!-- Add Custom Tag -->
+                                <div class="mt-2">
+                                    <input type="text" class="form-control" @bind="customTag" placeholder="Add a custom tag" />
+                                    <button type="button" class="btn btn-primary mt-2" @onclick="AddCustomTag">Add Custom Tag</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success">Save Transaction</button>
+                        </div>
+                    </EditForm>
+
+                    <!-- Success Message -->
+                    @if (showSuccessMessage)
+                    {
+                        <div class="alert alert-success text-center mt-3" style="width: 50%; margin: 0 auto;">
+                            Transaction has been successfully saved!
+                        </div>
+                    }
+
+                    <!-- Error Message -->
+                    @if (showErrorMessage)
+                    {
+                        <div class="alert alert-danger text-center mt-3" style="width: 50%; margin: 0 auto;">
+                            @errorMessage
+                        </div>
+                    }
+
+                </div>
+            </div>
+            <!-- Card End -->
+        </div>
+    </div>
+</div>
+
+
+
+
+
+@code {
+    private Transaction transaction = new Transaction();  // Model for the form
+    private List<Tag> tags = new List<Tag>();  // List of tags (to be fetched from the database)
+    private List<int> selectedTagIds = new List<int>();  // List of selected tag IDs
+    private string customTag = "";  // Bind for custom tag input
+    private bool showSuccessMessage = false;  // Flag for showing success modal
+    private bool showErrorMessage = false; // Flag for showing error message
+    private string errorMessage = ""; // Error message text
+
+    protected override void OnInitialized()
+    {
+        // Fetch the available tags (default and user-created) from the database
+        tags = _tagService.GetAllTags();
+    }
+
+    private void HandleAddTransaction()
+    {
+        // Check if the transaction type is "outflow" and validate balance
+        if (transaction.Type == "outflow")
+        {
+            bool isBalanceSufficient = _transactionService.CheckSufficientBalanceForOutflow(transaction.Amount);
+
+            if (!isBalanceSufficient)
+            {
+                showErrorMessage = true;
+                errorMessage = "Insufficient balance for this outflow transaction.";
+                return; // Exit the method if balance is insufficient
+            }
+        }
+
+
+
+        // Add the transaction with selected tag IDs
+        _transactionService.AddTransaction(transaction, selectedTagIds);
+
+        // Show success modal
+        showSuccessMessage = true;
+
+        // Remove success message after 3 seconds
+        Task.Delay(3000).ContinueWith(_ =>
+        {
+            InvokeAsync(() => showSuccessMessage = false);
+        });
+
+        // Reset the form fields after saving the transaction
+        transaction = new Transaction();
+        selectedTagIds.Clear();
+        customTag = "";
+    }
+
+    private void AddCustomTag()
+    {
+        if (!string.IsNullOrEmpty(customTag))
+        {
+            // Add custom tag to the database and refresh the tags list
+            _tagService.AddCustomTag(customTag);
+            customTag = "";  // Clear the input field
+            tags = _tagService.GetAllTags();  // Refresh the tags list
+        }
+    }
+
+    private void HandleTagSelection(ChangeEventArgs e)
+    {
+        // Clear the current selection
+        selectedTagIds.Clear();
+
+        // Convert the selected values into integers and store them in `selectedTagIds`
+        var selectedValues = e.Value as string[];
+        if (selectedValues != null)
+        {
+            foreach (var value in selectedValues)
+            {
+                if (int.TryParse(value, out int tagId))
+                {
+                    selectedTagIds.Add(tagId);
+                }
+            }
+        }
+    }
+
+    
+
+
+    
+
+    
+
+}

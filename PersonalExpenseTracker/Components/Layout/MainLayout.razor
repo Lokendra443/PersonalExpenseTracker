@@ -1,14 +1,25 @@
 ﻿@inherits LayoutComponentBase
+@inject ISessionService _sessionService
+
+
+<MudThemeProvider /> @* Required for theme support *@
+<MudPopoverProvider /> @* Needed for MudBlazor popovers *@
+<MudDialogProvider /> @* Needed for MudBlazor dialogs *@
+<MudSnackbarProvider /> @* Needed for MudBlazor snackbars *@
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    
+    @if (_sessionService.IsLoggedIn())
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+        
+    }
+    
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        
 
         <article class="content px-4">
             @Body

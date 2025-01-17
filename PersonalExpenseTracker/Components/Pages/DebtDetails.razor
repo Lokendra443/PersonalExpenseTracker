@@ -1,0 +1,209 @@
+﻿@page "/debtdetails"
+@using PersonalExpenseTracker.Model
+@inject ITransactionService _transactionService
+
+<h3>Debt Management</h3>
+<!-- Filters Section -->
+<div class="mb-4">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center flex-wrap mb-3">
+                <!-- Search by Title -->
+                <div class="me-4">
+                    <label for="searchTitle" class="form-label">Search by Title:</label>
+                    <input id="searchTitle" type="text" class="form-control" @bind="searchText" style="width: 180px;" />
+                </div>
+
+                <!-- Status Filter -->
+                <div class="me-4">
+                    <label for="statusFilter" class="form-label">Status:</label>
+                    <select id="statusFilter" class="form-select" @bind="statusFilter" style="width: 180px;">
+                        <option value="">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Cleared">Cleared</option>
+                    </select>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div>
+                    <label for="dateRange" class="form-label">Date Range:</label>
+                    <div class="d-flex">
+                        <input id="startDate" type="date" class="form-control" @bind="startDate" style="width: 160px;" />
+                        <span class="mx-2 align-self-center">to</span>
+                        <input id="endDate" type="date" class="form-control" @bind="endDate" style="width: 160px;" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Action Buttons -->
+            <div class="d-flex">
+                <button class="btn btn-success btn-sm me-3" @onclick="ApplyFilters">Apply Filter</button>
+                <button class="btn btn-secondary btn-sm" @onclick="ClearFilters">Clear Filter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Debt List -->
+<div class="mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Debt List</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Source of Debt</th>
+                        <th>Due Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var debt in filteredDebts)
+                    {
+                        <tr class="@(debt.Status == "Pending" ? "table-warning" : "table-success")">
+                            <td>@debt.Title</td>
+                            <td>@debt.SourceOfDebt</td>
+                            <td>@debt.DueDate?.ToString("yyyy-MM-dd")</td>
+                            <td>@debt.Amount.ToString("C")</td>
+                            <td>@debt.Status</td>
+                            <td>
+                                @if (debt.Status == "Pending")
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="() => ClearDebt(debt)">Clear Debt</button>
+                                }
+                                else
+                                {
+                                    <span>Cleared</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+@code {
+    private List<Transaction> debts = new List<Transaction>();
+    private List<Transaction> inflowTransactions = new List<Transaction>();
+    private List<Transaction> filteredDebts = new List<Transaction>();
+
+    private string searchText = "";
+    private string statusFilter = "";
+    private DateTime? startDate = null;
+    private DateTime? endDate = null;
+
+    private string successMessage = null;
+    private string errorMessage = null;
+
+    protected override void OnInitialized()
+    {
+        // Fetch all transactions
+        var allTransactions = _transactionService.GetAllTransactions();
+
+        // Separate debts and inflows
+        debts = allTransactions.Where(t => t.Type == "debt").ToList();
+        inflowTransactions = allTransactions.Where(t => t.Type == "inflow").ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        filteredDebts = debts.Where(d =>
+            (string.IsNullOrEmpty(searchText) || d.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(statusFilter) || d.Status == statusFilter) &&
+            (!startDate.HasValue || d.DueDate >= startDate.Value) &&
+            (!endDate.HasValue || d.DueDate <= endDate.Value)
+        ).ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchText = "";
+        statusFilter = "";
+        startDate = null;
+        endDate = null;
+        ApplyFilters();
+    }
+
+    
+
+    private void ClearDebt(Transaction debt)
+    {
+        try
+        {
+            // Calculate the total inflow amount
+            var totalInflow = inflowTransactions.Sum(t => t.Amount);
+
+            // Check if there are sufficient inflows to clear the debt
+            if (totalInflow < debt.Amount)
+            {
+                errorMessage = "Insufficient total inflows to clear the debt.";
+                successMessage = null;
+                return;
+            }
+
+            // Mark the debt as cleared
+            debt.Status = "Cleared";
+
+            // Update the debt status in the database
+            //_transactionService.UpdateTransaction(transaction);
+
+            // Create a transaction to reflect the clearing of the debt
+            var debtClearedTransaction = new Transaction
+                {
+                    Type = "debt_cleared",
+                    Title = debt.Title,
+                    Amount = debt.Amount,
+                    Date = DateTime.Now,
+                    Status = "Cleared"
+                };
+
+            // Add the debt cleared transaction to the database
+            //_transactionService.AddTransaction(transaction, selectedTagIds);
+
+            // Refresh the filtered debts list to remove the "Clear Debt" button for cleared debts
+            ApplyFilters();
+
+            // Display success message
+            successMessage = $"Debt '{debt.Title}' has been cleared successfully.";
+            errorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred while clearing the debt: " + ex.Message;
+            successMessage = null;
+
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+
+
+   
+    
+
+
+
+
+
+    
+
+    
+
+}

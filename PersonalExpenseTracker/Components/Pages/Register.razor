@@ -1,0 +1,115 @@
+﻿@page "/register"
+@using PersonalExpenseTracker.Model
+@using PersonalExpenseTracker.Services
+@inject IUserService _userService
+
+
+
+
+<div class="vh-100 d-flex justify-content-center align-items-center" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0;">
+    <div class="card p-4 shadow" style="width: 500px;">
+        <h3 class="text-center mb-4">Create an Account</h3>
+        <p class="text-center text-muted">Please enter your details</p>
+        <EditForm Model="@user" OnValidSubmit="HandleRegister" >
+            <DataAnnotationsValidator />
+            <div class="row">
+                <!-- Username Field -->
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" id="username" @bind-value="user.Username" class="form-control" placeholder="Enter your username" />
+                    <ValidationMessage For="@(() => user.Username)" />
+                </div>
+
+                <!-- Email Field -->
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" @bind-value="user.Email" class="form-control" placeholder="Enter your email" />
+                    <ValidationMessage For="@(() => user.Email)" />
+                </div>
+
+                <!-- Preferred Currency Dropdown -->
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="preferredCurrency" class="form-label">Preferred Currency</label>
+                    <select id="preferredCurrency" @bind="user.PreferredCurrency"  class="form-select">
+                        <option selected disabled>Select your currency</option>
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="NPR">NPR - Nepalese Rupees</option>
+                        <option value="INR">INR - Indian Rupee</option>
+                        <option value="GBP">GBP - British Pound</option>
+                    </select>
+                    <ValidationMessage For="@(() => user.PreferredCurrency)" />
+                </div>
+
+                <!-- Phone Number Field -->
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="phoneNo" class="form-label">Phone Number</label>
+                    <input type="text" id="phoneNo" @bind-value="user.PhoneNo" class="form-control" placeholder="Enter your phone number" />
+                    <ValidationMessage For="@(() => user.PhoneNo)" />
+                </div>
+
+                
+
+                <!-- Password Field -->
+                <div class="col-12 col-md-6 mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" @bind-value="user.Password" class="form-control" placeholder="Enter your password" />
+                    <ValidationMessage For="@(() => user.Password)" />
+                </div>
+            </div>
+
+            <!-- Register Button -->
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+        </EditForm>
+
+        <!-- Display Feedback Message -->
+        <div class="text-center text-muted mt-3">
+            @if (!string.IsNullOrEmpty(feedbackMessage))
+            {
+                <p>@feedbackMessage</p>
+            }
+        </div>
+
+        <!-- Login Link -->
+        <div class="text-center mt-3">
+            <p class="text-muted">
+                If you already have an account,
+                <a href="/" class="text-decoration-none">login here</a>.
+            </p>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+@code {
+    private User user = new User();  // Create an instance of the User model
+    private string feedbackMessage;  // To hold feedback message from UserService
+
+    // This method handles the form submission
+    private void HandleRegister()
+    {
+        try
+        {
+            // call the Register mehtod from UserService
+            feedbackMessage = _userService.Register(user.Username, user.Email, user.PhoneNo, user.PreferredCurrency, user.Password);
+
+            // Clear the form fields if registrationis successful
+            if (feedbackMessage == "User registered successfully.")
+            {
+                user = new User(); // Reset the form after successful registration
+            }
+        }
+        catch (Exception e)
+        {
+            feedbackMessage = $"Error:{e.Message}";
+        }
+    }
+
+
+
+}

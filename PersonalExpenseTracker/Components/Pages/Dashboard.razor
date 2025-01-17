@@ -1,0 +1,353 @@
+﻿@page "/dashboard"
+@using PersonalExpenseTracker.Model
+
+
+<h1 class="text-center my-4">Your Financial Overview</h1>
+
+
+<!-- Date Range Filter -->
+<div class="mb-4">
+    <label for="dateRange" class="form-label ">Select Date Range:</label>
+    <InputDate id="startDate" class="form-control" @bind-Value="startDate" />
+    <InputDate id="endDate" class="form-control mt-2" @bind-Value="endDate" />
+</div>
+
+<!-- Filter Buttons -->
+<div class="mt-1">
+    <button class="btn btn-success btn-sm me-3" @onclick="ApplyFilters" >Apply Filter</button>
+    <button class="btn btn-secondary btn-sm" @onclick="ClearFilters" >Clear Filter</button>
+</div>
+
+
+<!-- Financial Statistics -->
+<div class="row mt-lg-5">
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Transactions</h5>
+                <p class="card-text">@totalTransactions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Net Balance</h5>
+                <p class="card-text">@netBalance.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Inflows</h5>
+                <p class="card-text">@totalInflows.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mt-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Outflows</h5>
+                <p class="card-text">@totalOutflows.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mt-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Debts</h5>
+                <p class="card-text">@totalDebts.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mt-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Cleared Debts</h5>
+                <p class="card-text">@clearedDebts.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mt-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Remaining Debts</h5>
+                <p class="card-text">@remainingDebts.ToString("C")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Top 5 Highest Transactions -->
+<h4 class="mt-lg-5">Top 5 Highest Transactions</h4>
+<div class="row mt-3">
+    <!-- Top 5 Highest Inflows -->
+    <div class="col-md-4">
+        <MudPaper Elevation="3" Class="p-3">
+            <h6>Top 5 Inflows</h6>
+            <MudChart ChartType="ChartType.Pie" InputLabels="@highestInflowsLabels" InputData="@highestInflowsData" />
+        </MudPaper>
+    </div>
+
+    <!-- Top 5 Highest Outflows -->
+    <div class="col-md-4">
+        <MudPaper Elevation="3" Class="p-3">
+            <h6>Top 5 Outflows</h6>
+            <MudChart ChartType="ChartType.Pie" InputLabels="@highestOutflowsLabels" InputData="@highestOutflowsData" />
+        </MudPaper>
+    </div>
+
+    <!-- Top 5 Highest Debts -->
+    <div class="col-md-4">
+        <MudPaper Elevation="3" Class="p-3">
+            <h6>Top 5 Debts</h6>
+            <MudChart ChartType="ChartType.Pie" InputLabels="@highestDebtsLabels" InputData="@highestDebtsData" />
+        </MudPaper>
+    </div>
+</div>
+
+<!-- Top 5 Lowest Transactions -->
+<h4 class="mt-lg-5">Top 5 Lowest Transactions</h4>
+<div class="row mt-3">
+    <!-- Top 5 Lowest Inflows -->
+    <div class="col-md-4">
+        <MudPaper Elevation="3" Class="p-3">
+            <h6>Top 5 Inflows</h6>
+            <MudChart ChartType="ChartType.Pie" InputLabels="@lowestInflowsLabels" InputData="@lowestInflowsData" />
+        </MudPaper>
+    </div>
+
+    <!-- Top 5 Lowest Outflows -->
+    <div class="col-md-4">
+        <MudPaper Elevation="3" Class="p-3">
+            <h6>Top 5 Outflows</h6>
+            <MudChart ChartType="ChartType.Pie" InputLabels="@lowestOutflowsLabels" InputData="@lowestOutflowsData" />
+        </MudPaper>
+    </div>
+
+    <!-- Top 5 Lowest Debts -->
+    <div class="col-md-4">
+        <MudPaper Elevation="3" Class="p-3">
+            <h6>Top 5 Debts</h6>
+            <MudChart ChartType="ChartType.Pie" InputLabels="@lowestDebtsLabels" InputData="@lowestDebtsData" />
+        </MudPaper>
+    </div>
+</div>
+
+
+
+<!-- Pending Debts List -->
+<div class="mt-5">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">List of Pending Debts</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Source of Debt</th>
+                        <th>Due Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var debt in filteredDebts)
+                    {
+                        <tr class="@(debt.Status == "Pending" ? "table-warning" : "table-success")">
+                            <td>@debt.Title</td>
+                            <td>@debt.SourceOfDebt</td>
+                            <td>@debt.DueDate?.ToString("yyyy-MM-dd")</td>
+                            <td>@debt.Amount.ToString("C")</td>
+                            <td>@debt.Status</td>
+                            <td>
+                                @if (debt.Status == "Pending")
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="() => ClearDebt(debt)">Clear Debt</button>
+                                }
+                                else
+                                {
+                                    <span>Cleared</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+    private DateTime? startDate = null;
+    private DateTime? endDate = null;
+
+    private List<Transaction> transactions = new();
+    private List<Transaction> filteredDebts = new();
+
+    private List<Transaction> inflows = new();
+    private List<Transaction> outflows = new();
+    private List<Transaction> debts = new();
+
+    private int totalTransactions = 0;
+    private decimal totalInflows = 0;
+    private decimal totalOutflows = 0;
+    private decimal totalDebts = 0;
+    private decimal clearedDebts = 0;
+    private decimal remainingDebts = 0;
+    private decimal netBalance = 0;
+
+
+    protected override void OnInitialized()
+    {
+        FetchData();
+        UpdateDashboard();
+        CalculateTopTransactions();
+        StateHasChanged();
+    }
+
+    private void FetchData()
+    {
+        transactions = _transactionService.GetAllTransactions().ToList();
+
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = transactions.Where(t =>
+            (!startDate.HasValue || t.Date >= startDate) &&
+            (!endDate.HasValue || t.Date <= endDate)).ToList();
+
+        filteredDebts = _transactionService.GetPendingDebts(); //Fetch filtered debts
+        _dashboardService.UpdateDashboardStats();  // Update stats based on filtered transactions
+        CalculateTopTransactions();  // Recalculate chart data
+        StateHasChanged();  // Trigger re-render
+
+        
+    }
+
+    private void ClearFilters()
+    {
+        startDate = null;
+        endDate = null;
+        filteredDebts = _transactionService.GetPendingDebts(); //Fetch filtered debts
+        _dashboardService.UpdateDashboardStats();  // Update stats based on filtered transactions
+        CalculateTopTransactions();  // Recalculate chart data
+        StateHasChanged();  // Trigger re-render
+    }
+
+    private void UpdateDashboard()
+    {
+        totalTransactions = transactions.Count;
+        totalInflows = transactions.Where(t => t.Type == "inflow").Sum(t => t.Amount);
+        totalOutflows = transactions.Where(t => t.Type == "outflow").Sum(t => t.Amount);
+        totalDebts = transactions.Where(t => t.Type == "debt").Sum(t => t.Amount);
+        clearedDebts = transactions.Where(t => t.Type == "debt" && t.Status == "Cleared").Sum(t => t.Amount);
+        remainingDebts = totalDebts - clearedDebts;
+        netBalance = totalInflows + totalDebts - totalOutflows;
+    }
+
+    private void ClearDebt(Transaction debt)
+    {
+        // Update the status of the debt to "Cleared"
+        debt.Status = "Cleared";
+
+        // Update the debt status in the database using the UpdateDebtStatus method
+        _transactionService.UpdateDebtStatus(debt.Id, debt.Status); // Use debt's ID and the new status
+
+        // Update the dashboard stats after clearing the debt
+        UpdateDashboard();
+    }
+
+
+    // Data for Charts
+    private double[] highestInflowsData;
+    private string[] highestInflowsLabels;
+
+    private double[] highestOutflowsData;
+    private string[] highestOutflowsLabels;
+
+    private double[] highestDebtsData;
+    private string[] highestDebtsLabels;
+
+    private double[] lowestInflowsData;
+    private string[] lowestInflowsLabels;
+
+    private double[] lowestOutflowsData;
+    private string[] lowestOutflowsLabels;
+
+    private double[] lowestDebtsData;
+    private string[] lowestDebtsLabels;
+
+
+
+    private void CalculateTopTransactions()
+    {
+        // Highest Inflows
+        var highestInflows = transactions
+            .Where(t => t.Type == "inflow")
+            .OrderByDescending(t => t.Amount)
+            .Take(5)
+            .ToList();
+
+        highestInflowsLabels = highestInflows.Select(t => t.Title).ToArray();
+        highestInflowsData = highestInflows.Select(t => (double)t.Amount).ToArray();
+       
+
+        // Highest Outflows
+        var highestOutflows = transactions
+            .Where(t => t.Type == "outflow")
+            .OrderByDescending(t => t.Amount)
+            .Take(5);
+        highestOutflowsLabels = highestOutflows.Select(t => t.Title).ToArray();
+        highestOutflowsData = highestOutflows.Select(t => (double)t.Amount).ToArray();
+
+        // Highest Debts
+        var highestDebts = transactions
+            .Where(t => t.Type == "debt")
+            .OrderByDescending(t => t.Amount)
+            .Take(5);
+        highestDebtsLabels = highestDebts.Select(t => t.Title).ToArray();
+        highestDebtsData = highestDebts.Select(t => (double)t.Amount).ToArray();
+
+        // Lowest Inflows
+        var lowestInflows = transactions
+            .Where(t => t.Type == "inflow")
+            .OrderBy(t => t.Amount)
+            .Take(5);
+        lowestInflowsLabels = lowestInflows.Select(t => t.Title).ToArray();
+        lowestInflowsData = lowestInflows.Select(t => (double)t.Amount).ToArray();
+
+        // Lowest Outflows
+        var lowestOutflows = transactions
+            .Where(t => t.Type == "outflow")
+            .OrderBy(t => t.Amount)
+            .Take(5);
+        lowestOutflowsLabels = lowestOutflows.Select(t => t.Title).ToArray();
+        lowestOutflowsData = lowestOutflows.Select(t => (double)t.Amount).ToArray();
+
+        // Lowest Debts
+        var lowestDebts = transactions
+            .Where(t => t.Type == "debt")
+            .OrderBy(t => t.Amount)
+            .Take(5);
+        lowestDebtsLabels = lowestDebts.Select(t => t.Title).ToArray();
+        lowestDebtsData = lowestDebts.Select(t => (double)t.Amount).ToArray();
+    }
+
+    
+
+    
+
+}
+
+
+

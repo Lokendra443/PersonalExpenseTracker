@@ -1,0 +1,27 @@
+﻿@page "/"
+
+@inject NavigationManager NavManager
+@inject IUserService _userService
+@inject ISessionService _sessionService
+
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if the user is logged in
+        var isLoggedIn = _sessionService.IsLoggedIn();
+
+        if (isLoggedIn)
+        {
+            // Redirect to the dashboard if logged in
+            NavManager.NavigateTo("/dashboard");
+        }
+        else
+        {
+            // Redirect to the login page if not logged in
+            NavManager.NavigateTo("/login", true);
+        }
+    }
+
+}

@@ -1,0 +1,169 @@
+﻿@page "/transactionlist"
+@using PersonalExpenseTracker.Model
+@inject ITransactionService _transactionService
+@inject ITagService _tagService
+
+
+<h1>Transaction Management</h1>
+
+
+<!-- Filters and Search -->
+<div class="mt-4">
+
+    <!-- Filters Row -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3 flex-wrap">
+                        <!-- Search by Title -->
+                        <div class="me-4">
+                            <label for="searchText" class="form-label">Search by Title</label>
+                            <input id="searchText" type="text" class="form-control" @bind="searchText" style="width: 180px;" />
+                        </div>
+
+                        <!-- Transaction Type Filter -->
+                        <div class="me-4">
+                            <label for="transactionType" class="form-label">Transaction Type</label>
+                            <select id="transactionType" class="form-select" @bind="selectedTransactionType" @bind:event="onchange" style="width: 180px;">
+                                <option value="">All</option>
+                                <option value="inflow">Inflow</option>
+                                <option value="outflow">Outflow</option>
+                                <option value="debt">Debt</option>
+                            </select>
+                        </div>
+
+                        <!-- Tags Filter -->
+                        <div class="me-4">
+                            <label for="tagsFilter" class="form-label">Tags</label>
+                            <select id="tagsFilter" class="form-select" @bind="selectedTagId" @bind:event="onchange" style="width: 180px;">
+                                <option value="">All</option>
+                                @foreach (var tag in tags)
+                                {
+                                    <option value="@tag.Id">@tag.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Date Range Filter -->
+                        <div>
+                            <label for="dateRange" class="form-label">Date Range</label>
+                            <div class="d-flex">
+                                <input id="dateRange" type="date" class="form-control" @bind="startDate" @bind:event="onchange" style="width: 160px;" />
+                                <span class="mx-2 align-self-center">to</span>
+                                <input type="date" class="form-control" @bind="endDate" @bind:event="onchange" style="width: 160px;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Action Buttons -->
+                    <div class="d-flex">
+                        <button class="btn btn-success btn-sm me-3" @onclick="ApplyFilters">Apply Filter</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="ClearFilters">Clear Filter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Transaction Button -->
+<div class="mt-5">
+    <NavLink class="btn btn-primary" href="/addtransaction">Add Transaction</NavLink>
+</div>
+
+<!-- Transactions Table -->
+<div class="mt-3">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Transaction List</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Type</th>
+                        <th>Notes</th>
+                        <th>Tags</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var transaction in filteredTransactions)
+                    {
+                        <tr>
+                            <td>@transaction.Title</td>
+                            <td>@transaction.Date.ToString("yyyy-MM-dd")</td>
+                            <td>@transaction.Amount.ToString("C")</td>
+                            <td>@transaction.Type</td>
+                            <td>@transaction.Notes</td>
+                            <td>
+                                @foreach (var tag in transaction.Tags)
+                                {
+                                    <span class="badge bg-secondary me-2">@tag.Name</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+@code {
+    private List<Transaction> transactions = new List<Transaction>();
+    private List<Transaction> filteredTransactions = new List<Transaction>();
+    private List<Tag> tags = new List<Tag>();
+    private Transaction transaction = new Transaction();
+   
+    private string searchText = "";
+    private string selectedTransactionType = "";
+    private int? selectedTagId = null;
+    private DateTime? startDate = null;
+    private DateTime? endDate = null;
+    private List<int> selectedTagIds = new List<int>();
+
+    protected override void OnInitialized()
+    {
+        transactions = _transactionService.GetAllTransactions();
+        tags = _tagService.GetAllTags();
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        // Apply filters based on user input
+        filteredTransactions = _transactionService.GetFilteredTransactions(
+            searchText,
+            selectedTransactionType,
+            selectedTagId,
+            startDate,
+            endDate
+        );
+    }
+
+    private void ClearFilters()
+    {
+        searchText = "";
+        selectedTransactionType = "";
+        selectedTagId = null;
+        startDate = null;
+        endDate = null;
+        ApplyFilters();
+    }
+
+    
+
+}

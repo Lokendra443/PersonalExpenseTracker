@@ -7,3 +7,12 @@
 @using Microsoft.JSInterop
 @using PersonalExpenseTracker
 @using PersonalExpenseTracker.Components
+@using PersonalExpenseTracker.Model
+@using PersonalExpenseTracker.Services
+@using MudBlazor
+@using MudBlazor.Components
+
+@inject ITransactionService _transactionService
+@inject ITagService _tagService
+@inject IDashboardService _dashboardService
+

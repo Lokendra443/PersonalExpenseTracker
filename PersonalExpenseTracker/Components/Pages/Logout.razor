@@ -1,0 +1,13 @@
+﻿@page "/logout"
+
+@inject NavigationManager NavManager
+@inject ISessionService _sessionService
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Clear session and redirect to login
+        _sessionService.Logout();
+        NavManager.NavigateTo("/login", true);
+    }
+}
