@@ -10,6 +10,6 @@ namespace PersonalExpenseTracker.Services
     public interface IDashboardService
     {
         void UpdateDashboardStats();
-        List<Transaction> GetPendingDebts();
+        
     }
 }

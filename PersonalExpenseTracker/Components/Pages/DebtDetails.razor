@@ -110,6 +110,17 @@
     private string successMessage = null;
     private string errorMessage = null;
 
+
+
+    
+    private decimal totalInflows = 0;
+    private decimal totalDebts = 0;
+    private decimal clearedDebts = 0;
+    private decimal remainingDebts = 0;
+    
+
+
+
     protected override void OnInitialized()
     {
         // Fetch all transactions
@@ -147,22 +158,20 @@
     {
         try
         {
-            // Calculate the total inflow amount
-            var totalInflow = inflowTransactions.Sum(t => t.Amount);
+            // Calculate the total inflow amount (only for transactions that are of type "inflow")
+            var totalInflows = inflowTransactions.Sum(t => t.Amount);
 
             // Check if there are sufficient inflows to clear the debt
-            if (totalInflow < debt.Amount)
+            if (totalInflows < debt.Amount)
             {
                 errorMessage = "Insufficient total inflows to clear the debt.";
                 successMessage = null;
                 return;
             }
 
-            // Mark the debt as cleared
+            // Mark the debt as cleared in the database
             debt.Status = "Cleared";
-
-            // Update the debt status in the database
-            //_transactionService.UpdateTransaction(transaction);
+            _transactionService.UpdateTransaction(debt);  // Ensure the database is updated
 
             // Create a transaction to reflect the clearing of the debt
             var debtClearedTransaction = new Transaction
@@ -174,8 +183,15 @@
                     Status = "Cleared"
                 };
 
-            // Add the debt cleared transaction to the database
-            //_transactionService.AddTransaction(transaction, selectedTagIds);
+            // Add this transaction to the database
+            _transactionService.AddTransaction(debtClearedTransaction, new List<int>());
+
+            // Update the total cleared debts in the dashboard stats
+            clearedDebts += debt.Amount;
+            totalInflows -= debt.Amount;  // Decrease the inflow since the debt has been cleared
+
+            // Recalculate the remaining debts
+            remainingDebts = totalDebts - clearedDebts;
 
             // Refresh the filtered debts list to remove the "Clear Debt" button for cleared debts
             ApplyFilters();
@@ -183,6 +199,11 @@
             // Display success message
             successMessage = $"Debt '{debt.Title}' has been cleared successfully.";
             errorMessage = null;
+
+            // Update dashboard stats after clearing the debt
+            _dashboardService.UpdateDashboardStats(); // Ensure stats are updated
+
+            StateHasChanged();  // Trigger re-render to update UI
         }
         catch (Exception ex)
         {
@@ -192,6 +213,7 @@
             Console.WriteLine($"Error: {ex.Message}");
         }
     }
+
 
 
 

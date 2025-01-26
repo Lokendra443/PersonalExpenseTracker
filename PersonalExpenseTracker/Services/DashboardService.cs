@@ -62,12 +62,6 @@ namespace PersonalExpenseTracker.Services
         }
 
 
-        public List<Transaction> GetPendingDebts()
-        {
-            return _conn.Table<Transaction>()
-                        .Where(t => t.Type == "debt" && t.Status == "Pending")
-                        .OrderBy(t => t.DueDate)
-                        .ToList();
-        }
+        
     }
 }

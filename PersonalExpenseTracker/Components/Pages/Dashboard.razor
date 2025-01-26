@@ -168,7 +168,7 @@
                             <td>
                                 @if (debt.Status == "Pending")
                                 {
-                                    <button class="btn btn-success btn-sm" @onclick="() => ClearDebt(debt)">Clear Debt</button>
+                                    <button class="btn btn-success btn-sm">Clear Debt</button>
                                 }
                                 else
                                 {
@@ -190,12 +190,14 @@
     private DateTime? startDate = null;
     private DateTime? endDate = null;
 
+
+
     private List<Transaction> transactions = new();
     private List<Transaction> filteredDebts = new();
+    private List<Transaction> filteredDebtsList = new();
+    private List<Transaction> filtered = new();
 
-    private List<Transaction> inflows = new();
-    private List<Transaction> outflows = new();
-    private List<Transaction> debts = new();
+
 
     private int totalTransactions = 0;
     private decimal totalInflows = 0;
@@ -217,28 +219,37 @@
     private void FetchData()
     {
         transactions = _transactionService.GetAllTransactions().ToList();
+        filteredDebts = _transactionService.GetPendingDebts();   
 
     }
 
     private void ApplyFilters()
     {
-        var filtered = transactions.Where(t =>
+
+        filtered = transactions.Where(t =>
             (!startDate.HasValue || t.Date >= startDate) &&
             (!endDate.HasValue || t.Date <= endDate)).ToList();
 
-        filteredDebts = _transactionService.GetPendingDebts(); //Fetch filtered debts
+        filteredDebtsList = filteredDebts.Where(t =>
+            (!startDate.HasValue || t.Date >= startDate) &&
+            (!endDate.HasValue || t.Date <= endDate)).ToList();
+
+
+
         _dashboardService.UpdateDashboardStats();  // Update stats based on filtered transactions
         CalculateTopTransactions();  // Recalculate chart data
         StateHasChanged();  // Trigger re-render
 
-        
+
     }
+
+
 
     private void ClearFilters()
     {
         startDate = null;
         endDate = null;
-        filteredDebts = _transactionService.GetPendingDebts(); //Fetch filtered debts
+
         _dashboardService.UpdateDashboardStats();  // Update stats based on filtered transactions
         CalculateTopTransactions();  // Recalculate chart data
         StateHasChanged();  // Trigger re-render
@@ -253,19 +264,11 @@
         clearedDebts = transactions.Where(t => t.Type == "debt" && t.Status == "Cleared").Sum(t => t.Amount);
         remainingDebts = totalDebts - clearedDebts;
         netBalance = totalInflows + totalDebts - totalOutflows;
+
+        
     }
 
-    private void ClearDebt(Transaction debt)
-    {
-        // Update the status of the debt to "Cleared"
-        debt.Status = "Cleared";
-
-        // Update the debt status in the database using the UpdateDebtStatus method
-        _transactionService.UpdateDebtStatus(debt.Id, debt.Status); // Use debt's ID and the new status
-
-        // Update the dashboard stats after clearing the debt
-        UpdateDashboard();
-    }
+    
 
 
     // Data for Charts

@@ -105,11 +105,13 @@ namespace PersonalExpenseTracker.Services
         // Get all pending debts
         public List<Transaction> GetPendingDebts()
         {
-            return _conn.Table<Transaction>()
-                        .Where(t => t.Type == "debt" && t.Status == "Pending")
-                        .OrderBy(t => t.DueDate) // Optional: Sort by due date
-                        .ToList();
+
+            var transactions = GetAllTransactions();
+            return transactions.Where(t => t.Type == "debt" && t.Status == "Pending").ToList();
+
         }
+
+
 
         // Update debt status (e.g., to 'Cleared')
         public bool UpdateDebtStatus(int transactionId, string newStatus)
